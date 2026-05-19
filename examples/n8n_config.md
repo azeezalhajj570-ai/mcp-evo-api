@@ -1,13 +1,13 @@
-# Configuração do MCP Server para Evolution API no n8n
+# MCP Server for Evolution API Configuration in n8n
 
-Este documento fornece instruções para configurar o MCP Server da Evolution API para uso com o n8n.
+This document provides instructions for configuring the Evolution API MCP Server for use with n8n.
 
-## Configuração via STDIO (Command Line)
+## Configuration via STDIO (Command Line)
 
-1. No n8n, adicione um nó "MCP Client (STDIO)".
-2. Configure os campos conforme abaixo:
+1. In n8n, add an "MCP Client (STDIO)" node.
+2. Configure the fields as below:
 
-### Para Windows:
+### For Windows:
 
 **Command:**
 ```
@@ -16,17 +16,17 @@ powershell
 
 **Arguments:**
 ```
-/c cd C:\caminho\completo\para\mcp-evolution-api && node dist/index.js
+/c cd C:\full\path\to\mcp-evolution-api && node dist/index.js
 ```
 
 **Environments:**
 ```
-EVOLUTION_API_URL=https://seu-servidor-evolution-api.com
-EVOLUTION_API_KEY=sua-chave-api
-EVOLUTION_API_INSTANCE=sua-instancia
+EVOLUTION_API_URL=https://your-evolution-api-server.com
+EVOLUTION_API_KEY=your-api-key
+EVOLUTION_API_INSTANCE=your-instance
 ```
 
-### Para Linux/Mac:
+### For Linux/Mac:
 
 **Command:**
 ```
@@ -35,52 +35,52 @@ bash
 
 **Arguments:**
 ```
--c "cd /caminho/completo/para/mcp-evolution-api && node dist/index.js"
+-c "cd /full/path/to/mcp-evolution-api && node dist/index.js"
 ```
 
 **Environments:**
 ```
-EVOLUTION_API_URL=https://seu-servidor-evolution-api.com
-EVOLUTION_API_KEY=sua-chave-api
-EVOLUTION_API_INSTANCE=sua-instancia
+EVOLUTION_API_URL=https://your-evolution-api-server.com
+EVOLUTION_API_KEY=your-api-key
+EVOLUTION_API_INSTANCE=your-instance
 ```
 
-## Configuração via WebSocket
+## Configuration via WebSocket
 
-Se você estiver enfrentando problemas com o método STDIO, especialmente em ambientes Docker, você pode usar o WebSocket:
+If you are facing issues with the STDIO method, especially in Docker environments, you can use WebSocket:
 
-1. Primeiro, inicie o servidor MCP com suporte a WebSocket:
+1. First, start the MCP server with WebSocket support:
 ```bash
-cd /caminho/para/mcp-evolution-api
+cd /path/to/mcp-evolution-api
 export ENABLE_WEBSOCKET=true
 export PORT=3000
 npm start
 ```
 
-2. No n8n, adicione um nó "MCP Client (SSE)".
-3. Configure a URL como:
+2. In n8n, add an "MCP Client (SSE)" node.
+3. Configure the URL as:
 ```
-ws://seu-servidor:3000
+ws://your-server:3000
 ```
 
-## Solução de problemas
+## Troubleshooting
 
-### Erro de conexão fechada
+### Connection closed error
 
-Se você encontrar o erro "Connection closed", verifique:
+If you encounter the "Connection closed" error, check:
 
-1. O servidor MCP está em execução?
-2. Você configurou corretamente o caminho no n8n?
-3. As variáveis de ambiente estão corretas?
-4. Tente o método WebSocket se o STDIO falhar
+1. Is the MCP server running?
+2. Did you configure the path correctly in n8n?
+3. Are the environment variables correct?
+4. Try the WebSocket method if STDIO fails
 
-### Problemas com Docker
+### Docker Issues
 
-Se estiver executando o n8n em Docker, certifique-se de:
+If running n8n in Docker, make sure to:
 
-1. Usar o método WebSocket em vez de STDIO
-2. Configurar as redes Docker para que o contêiner n8n possa acessar o servidor MCP
+1. Use the WebSocket method instead of STDIO
+2. Configure Docker networks so that the n8n container can access the MCP server
 
-### Testando a conexão
+### Testing the connection
 
-Você pode testar a conexão listando as ferramentas disponíveis. Após configurar, clique em "List Available Tools" no nó MCP Client. 
+You can test the connection by listing the available tools. After configuring, click on "List Available Tools" in the MCP Client node.

@@ -1,116 +1,116 @@
-# MCP Server para Evolution API
+# MCP Server for Evolution API
 
-Este projeto implementa um servidor MCP (Model Context Protocol) que expõe todas as funcionalidades da Evolution API v2 para modelos de linguagem.
+This project implements an MCP (Model Context Protocol) server that exposes all Evolution API v2 features to language models.
 
-## Funcionalidades
+## Features
 
-O servidor expõe todas as categorias de funcionalidades da Evolution API:
+The server exposes all Evolution API functionality categories:
 
-### Gestão de Instâncias
-- Verificação de status da API e instância
-- Criação, exclusão e reinicialização de instâncias
-- Gestão de presença
+### Instance Management
+- API and instance status checks
+- Instance creation, deletion, and restart
+- Presence management
 - Logout
 
-### Envio de Mensagens
-- Mensagens de texto
-- Mensagens com mídia (imagens, documentos, vídeos, áudios)
+### Message Sending
+- Text messages
+- Media messages (images, documents, videos, audios)
 - Stickers
-- Localização
-- Contatos
-- Enquetes e listas
+- Locations
+- Contacts
+- Polls and lists
 - Status
 
-### Gestão de Chat
-- Verificação de números WhatsApp
-- Marcação de mensagens como lidas
-- Arquivamento de conversas
-- Exclusão de mensagens
-- Gestão de presença no chat
-- Busca de mensagens e contatos
+### Chat Management
+- WhatsApp number verification
+- Mark messages as read
+- Archive/unarchive chats
+- Delete messages
+- Chat presence management
+- Search messages and contacts
 
-### Perfil
-- Busca e atualização de informações de perfil
-- Atualização de foto de perfil
-- Configuração de privacidade
+### Profile
+- Retrieve and update profile information
+- Update profile picture
+- Privacy settings
 
-### Grupos
-- Criação e gestão de grupos
-- Adição/remoção de participantes
-- Configuração de mensagens efêmeras
-- Convites de grupo
+### Groups
+- Group creation and management
+- Add/remove participants
+- Ephemeral messages configuration
+- Group invites
 
-### Integrações Adicionais
+### Additional Integrations
 - Typebot
 - Chatwoot
 
-## Requisitos
+## Requirements
 
 - Node.js 18+
-- NPM ou Yarn
-- Acesso a um servidor Evolution API v2
+- NPM or Yarn
+- Access to an Evolution API v2 server
 
-## Instalação
+## Installation
 
-### Via NPM (localmente)
+### Via NPM (locally)
 
 ```bash
-# Instalar localmente
+# Install locally
 git clone https://github.com/IntuitivePhella/mcp-evolution-api.git
 cd mcp-evolution-api
 npm install
 npm run build
 ```
 
-### Via NPX (sem instalação)
+### Via NPX (no installation)
 
 ```bash
-# Executar diretamente via npx (quando publicado)
+# Run directly via npx (when published)
 npx mcp-evolution-api
 ```
 
 ### Via Docker
 
 ```bash
-# Construir a imagem
+# Build the image
 docker build -t mcp-evolution-api .
 
-# Executar o container
+# Run the container
 docker run -p 3000:3000 --env-file .env mcp-evolution-api
 ```
 
-## Configuração
+## Configuration
 
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+Create a `.env` file in the project root with the following variables:
 
 ```bash
-# URL do servidor Evolution API
-EVOLUTION_API_URL=https://seu-servidor-evolution-api.com
+# Evolution API server URL
+EVOLUTION_API_URL=https://your-evolution-api-server.com
 
-# Chave API da Evolution API
-EVOLUTION_API_KEY=sua-chave-api
+# Evolution API key
+EVOLUTION_API_KEY=your-api-key
 
-# ID da instância WhatsApp na Evolution API
-EVOLUTION_API_INSTANCE=instancia-padrao
+# WhatsApp instance ID in Evolution API
+EVOLUTION_API_INSTANCE=default-instance
 
-# Habilitar servidor WebSocket (opcional)
+# Enable WebSocket server (optional)
 ENABLE_WEBSOCKET=true
 
-# Porta para o servidor WebSocket (opcional)
+# Port for WebSocket server (optional)
 PORT=3000
 ```
 
-## Execução
+## Running
 
-### Linha de comando
+### Command line
 
-Para iniciar o servidor em modo de desenvolvimento:
+To start the server in development mode:
 
 ```bash
 npm run dev
 ```
 
-Para compilar e executar em produção:
+To build and run in production:
 
 ```bash
 npm run build
@@ -120,33 +120,33 @@ npm start
 ### Docker
 
 ```bash
-# Usando os scripts do npm
+# Using npm scripts
 npm run docker:build
 npm run docker:run
 ```
 
-## Métodos de Conexão
+## Connection Methods
 
-Este servidor MCP suporta dois métodos de conexão:
+This MCP server supports two connection methods:
 
-### 1. STDIO (Padrão)
+### 1. STDIO (Default)
 
-Usado principalmente para conexões locais e integração com ferramentas como Claude Desktop.
+Used mainly for local connections and integration with tools like Claude Desktop.
 
 ### 2. WebSocket
 
-Ideal para conexões remotas ou quando o servidor está em um contêiner Docker. Para habilitar:
+Ideal for remote connections or when the server is in a Docker container. To enable:
 
 ```bash
 ENABLE_WEBSOCKET=true
-PORT=3000 # porta opcional, padrão é 3000
+PORT=3000 # optional port, default is 3000
 ```
 
-## Integração com Ferramentas
+## Integration with Tools
 
 ### Claude Desktop
 
-Adicione ao seu arquivo `claude_desktop_config.json`:
+Add to your `claude_desktop_config.json` file:
 
 ```json
 {
@@ -154,104 +154,104 @@ Adicione ao seu arquivo `claude_desktop_config.json`:
     "evolution-api": {
       "command": "node",
       "args": [
-        "/caminho/completo/para/mcp-evolution-api/dist/index.js"
+        "/full/path/to/mcp-evolution-api/dist/index.js"
       ],
       "env": {
-        "EVOLUTION_API_URL": "https://seu-servidor-evolution-api.com",
-        "EVOLUTION_API_KEY": "sua-chave-api",
-        "EVOLUTION_API_INSTANCE": "sua-instancia"
+        "EVOLUTION_API_URL": "https://your-evolution-api-server.com",
+        "EVOLUTION_API_KEY": "your-api-key",
+        "EVOLUTION_API_INSTANCE": "your-instance"
       }
     }
   }
 }
 ```
 
-Veja um exemplo completo em [examples/claude_desktop_config.json](examples/claude_desktop_config.json).
+See a complete example at [examples/claude_desktop_config.json](examples/claude_desktop_config.json).
 
 ### n8n
 
-Para configurar no n8n, consulte o guia detalhado em [examples/n8n_config.md](examples/n8n_config.md).
+To configure in n8n, please consult the detailed guide at [examples/n8n_config.md](examples/n8n_config.md).
 
-## Ferramentas Disponíveis
+## Available Tools
 
-O servidor MCP expõe as seguintes ferramentas que podem ser chamadas pelo cliente MCP:
+The MCP server exposes the following tools that can be called by the MCP client:
 
-### Informações Gerais
-- `getApiStatus`: Verifica o status da Evolution API
+### General Information
+- `getApiStatus`: Checks the Evolution API status
 
-### Gestão de Instâncias
-- `getInstanceStatus`: Verifica o status da conexão do WhatsApp
-- `setPresence`: Define o status de presença
-- `logoutInstance`: Desconecta a instância
-- `restartInstance`: Reinicia a instância
+### Instance Management
+- `getInstanceStatus`: Checks the WhatsApp connection status
+- `setPresence`: Sets the presence status
+- `logoutInstance`: Disconnects the instance
+- `restartInstance`: Restarts the instance
 
-### Mensagens
-- `sendTextMessage`: Envia uma mensagem de texto
-- `sendMedia`: Envia mídia (imagem, documento, vídeo, áudio)
-- `sendAudio`: Envia áudio/mensagem de voz
-- `sendSticker`: Envia um sticker
-- `sendLocation`: Envia uma localização
-- `sendContact`: Envia um contato
-- `sendPoll`: Envia uma enquete
+### Messages
+- `sendTextMessage`: Sends a text message
+- `sendMedia`: Sends media (image, document, video, audio)
+- `sendAudio`: Sends audio/voice message
+- `sendSticker`: Sends a sticker
+- `sendLocation`: Sends a location
+- `sendContact`: Sends a contact
+- `sendPoll`: Sends a poll
 
-### Controle de Chat
-- `checkWhatsAppNumber`: Verifica se um número é do WhatsApp
-- `markMessageAsRead`: Marca mensagem como lida
-- `archiveChat`: Arquiva/desarquiva um chat
-- `deleteMessageForEveryone`: Exclui mensagem para todos
+### Chat Control
+- `checkWhatsAppNumber`: Checks if a number is on WhatsApp
+- `markMessageAsRead`: Marks a message as read
+- `archiveChat`: Archives/unarchives a chat
+- `deleteMessageForEveryone`: Deletes a message for everyone
 
-### Perfil
-- `updateProfileName`: Atualiza o nome do perfil
-- `updateProfileStatus`: Atualiza o status do perfil
+### Profile
+- `updateProfileName`: Updates the profile name
+- `updateProfileStatus`: Updates the profile status
 
-### Grupos
-- `createGroup`: Cria um novo grupo
-- `addGroupParticipants`: Adiciona participantes a um grupo
+### Groups
+- `createGroup`: Creates a new group
+- `addGroupParticipants`: Adds participants to a group
 
-## Recursos Disponíveis
+## Available Resources
 
-O servidor MCP disponibiliza os seguintes recursos:
+The MCP server provides the following resources:
 
-- `contacts://list`: Lista todos os contatos disponíveis
-- `chats://list`: Lista todas as conversas disponíveis
-- `groups://list`: Lista todos os grupos disponíveis
-- `profile://info`: Exibe informações do perfil
-- `privacy://settings`: Exibe configurações de privacidade
+- `contacts://list`: Lists all available contacts
+- `chats://list`: Lists all available conversations
+- `groups://list`: Lists all available groups
+- `profile://info`: Displays profile information
+- `privacy://settings`: Displays privacy settings
 
-## Exemplo de uso com Claude via MCP
+## Usage Example with Claude via MCP
 
 ```typescript
 import { McpClient } from "@modelcontextprotocol/sdk/client/mcp.js";
 
-// Conecte-se ao servidor MCP
+// Connect to the MCP server
 const client = new McpClient();
 await client.connect(mcpServerTransport);
 
-// Verificar status da API
+// Check API status
 const status = await client.callTool("getApiStatus", {});
 console.log(status.content[0].text);
 
-// Enviar uma mensagem
+// Send a message
 const msgResult = await client.callTool("sendTextMessage", {
   number: "5511999999999",
-  text: "Olá, esta é uma mensagem de teste!"
+  text: "Hello, this is a test message!"
 });
 console.log(msgResult.content[0].text);
 
-// Enviar uma mídia
+// Send media
 const mediaResult = await client.callTool("sendMedia", {
   number: "5511999999999",
-  url: "https://exemplo.com/imagem.jpg",
-  caption: "Veja esta imagem!",
+  url: "https://example.com/image.jpg",
+  caption: "Check out this image!",
   mediaType: "image"
 });
 console.log(mediaResult.content[0].text);
 
-// Carregar recursos
+// Load resources
 const groups = await client.loadResource("groups://list");
 console.log(groups.contents[0].text);
 ```
 
-## Licença
+## License
 
-MIT 
+MIT
