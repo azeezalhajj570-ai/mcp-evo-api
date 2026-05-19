@@ -1,0 +1,9 @@
+services:
+  evolution-api:
+    build: .
+    container_name: mcp-evolution-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:3000"
+    env_file:
+      - .env

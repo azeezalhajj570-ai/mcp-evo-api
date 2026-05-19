@@ -67,10 +67,30 @@ export class EvolutionApiService {
   // Verificar status da instância
   async getInstanceStatus(): Promise<InstanceStatus> {
     try {
-      const response = await apiClient.get<InstanceStatus>(`/instance/connectionState/${this.instanceId}`);
+      const url = `/instance/connectionState/${this.instanceId}`;
+      console.log(`[EvolutionAPI] GET ${config.evolutionApi.baseUrl}${url}`);
+      const response = await apiClient.get<InstanceStatus>(url);
       return response.data;
-    } catch (error) {
-      console.error("Erro ao verificar status da instância:", error);
+    } catch (error: any) {
+      console.error(`[EvolutionAPI] Error checking instance "${this.instanceId}":`, error.message);
+      if (error.response?.status === 404) {
+        throw new Error(
+          `Instance "${this.instanceId}" not found. ` +
+          `Check EVOLUTION_API_INSTANCE env var or use "fetchInstances" tool to list available instances. ` +
+          `URL: ${config.evolutionApi.baseUrl}/instance/connectionState/${this.instanceId}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  // Listar todas as instâncias
+  async fetchInstances(): Promise<any[]> {
+    try {
+      const response = await apiClient.get('/instance/fetchInstances');
+      return response.data || [];
+    } catch (error: any) {
+      console.error("[EvolutionAPI] Error fetching instances:", error.message);
       throw error;
     }
   }

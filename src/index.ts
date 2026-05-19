@@ -50,14 +50,48 @@ server.tool("getInstanceStatus",
       return {
         content: [{ 
           type: "text", 
-          text: `Status da instância: ${status.state || "Desconhecido"}` 
+          text: `Instance status: ${status.state || "Unknown"}` 
         }]
       };
     } catch (error) {
       return {
         content: [{ 
           type: "text", 
-          text: `Erro ao verificar status da instância: ${(error as Error).message}` 
+          text: `Error checking instance status: ${(error as Error).message}` 
+        }]
+      };
+    }
+  }
+);
+
+// Adiciona ferramenta para listar todas as instâncias disponíveis
+server.tool("fetchInstances",
+  {},
+  async () => {
+    try {
+      const instances = await evolutionService.fetchInstances();
+      if (!instances || instances.length === 0) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: "No instances found on the Evolution API server."
+          }]
+        };
+      }
+      const instanceList = instances.map((inst: any) => 
+        `- ${inst.instanceName || inst.name || "Unnamed"}: ${inst.state || "unknown state"}`
+      ).join("\n");
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Available instances (${instances.length}):\n${instanceList}` 
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Error fetching instances: ${(error as Error).message}` 
         }]
       };
     }
