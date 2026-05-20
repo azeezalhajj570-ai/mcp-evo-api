@@ -1,7 +1,8 @@
 export const config = {
-  // Evolution API configuration — instance-based auth only
+  // Evolution API configuration
   evolutionApi: {
     baseUrl: process.env.EVOLUTION_API_URL || "https://your-evolution-api-server.com",
+    apiKey: process.env.EVOLUTION_API_KEY || "",
     instanceId: process.env.EVOLUTION_API_INSTANCE || "default-instance",
     instanceToken: process.env.EVOLUTION_API_INSTANCE_TOKEN || ""
   },

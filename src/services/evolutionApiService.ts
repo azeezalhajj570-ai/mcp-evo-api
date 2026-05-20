@@ -32,7 +32,8 @@ import {
   InstanceConfig
 } from "../types.js";
 
-// Service class for Evolution API — each instance uses its own token, no global API key
+// Service class for Evolution API
+// Global apikey (from .env) is always sent. Instance token is added per-session.
 export class EvolutionApiService {
   private instanceId: string;
   private instanceToken: string;
@@ -49,6 +50,7 @@ export class EvolutionApiService {
       baseURL: config.evolutionApi.baseUrl,
       headers: {
         "Content-Type": "application/json",
+        "apikey": config.evolutionApi.apiKey,
         ...(instanceToken ? { "instance-token": instanceToken } : {})
       }
     });
