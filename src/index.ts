@@ -58,14 +58,13 @@ server.tool("getInstanceStatus", {}, async () => {
 server.tool("fetchInstances", {}, async () => {
   try {
     const svc = getService();
-    const instances = await svc.fetchInstances();
-    if (!instances || instances.length === 0) {
-      return { content: [{ type: "text", text: "No instances found." }] };
-    }
-    const list = instances.map((inst: any) =>
-      `- ${inst.name || inst.instanceName || "Unnamed"} (${inst.connectionStatus || "unknown"})`
-    ).join("\n");
-    return { content: [{ type: "text", text: `Available instances (${instances.length}):\n${list}` }] };
+    const status = await svc.getInstanceStatus();
+    return {
+      content: [{
+        type: "text",
+        text: `Instance "${status.instanceName || svc.instanceId}" — status: ${status.state || status.connectionStatus || "Unknown"}`
+      }]
+    };
   } catch (error) {
     return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
   }
