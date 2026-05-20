@@ -224,17 +224,17 @@ export class EvolutionApiService {
 
   // ===== ENVIO DE MENSAGENS =====
 
-  // Enviar mensagem de texto
+  // Send text message
   async sendTextMessage({ number, text, options }: SendTextMessageRequest): Promise<SendTextMessageResponse> {
     try {
-      const response = await this.apiClient.post<SendTextMessageResponse>(`/message/text/${this.instanceId}`, {
+      const response = await this.apiClient.post(`/message/sendText/${this.instanceId}`, {
         number,
-        options: options || { delay: 1200 },
-        textMessage: { text }
+        text,
+        options: options || { delay: 1200 }
       });
       return response.data;
-    } catch (error) {
-      console.error("Erro ao enviar mensagem de texto:", error);
+    } catch (error: any) {
+      console.error("[EvolutionAPI] Error sending text message:", error.message);
       throw error;
     }
   }
@@ -242,7 +242,7 @@ export class EvolutionApiService {
   // Enviar template
   async sendTemplate(data: SendTemplateRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/template/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendTemplate/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar template:", error);
@@ -253,7 +253,7 @@ export class EvolutionApiService {
   // Enviar status
   async sendStatus(data: SendStatusRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/status/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendStatus/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar status:", error);
@@ -264,7 +264,7 @@ export class EvolutionApiService {
   // Enviar mídia
   async sendMedia(data: SendMediaRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/media/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendMedia/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar mídia:", error);
@@ -272,21 +272,15 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar áudio WhatsApp
+  // Send audio (PTT/voice message) — not supported in this API version
   async sendAudio(data: SendAudioRequest): Promise<any> {
-    try {
-      const response = await this.apiClient.post(`/message/audio/${this.instanceId}`, data);
-      return response.data;
-    } catch (error) {
-      console.error("Erro ao enviar áudio:", error);
-      throw error;
-    }
+    throw new Error("Audio messages are not supported by this Evolution API version");
   }
 
   // Enviar sticker
   async sendSticker(data: SendStickerRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/sticker/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendSticker/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar sticker:", error);
@@ -297,7 +291,7 @@ export class EvolutionApiService {
   // Enviar localização
   async sendLocation(data: SendLocationRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/location/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendLocation/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar localização:", error);
@@ -308,7 +302,7 @@ export class EvolutionApiService {
   // Enviar contato
   async sendContact(data: SendContactRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/contact/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendContact/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar contato:", error);
@@ -319,7 +313,7 @@ export class EvolutionApiService {
   // Enviar reação
   async sendReaction(data: SendReactionRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/reaction/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendReaction/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar reação:", error);
@@ -330,7 +324,7 @@ export class EvolutionApiService {
   // Enviar enquete
   async sendPoll(data: SendPollRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/poll/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendPoll/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar enquete:", error);
@@ -341,7 +335,7 @@ export class EvolutionApiService {
   // Enviar lista
   async sendList(data: SendListRequest): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/message/list/${this.instanceId}`, data);
+      const response = await this.apiClient.post(`/message/sendList/${this.instanceId}`, data);
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar lista:", error);
