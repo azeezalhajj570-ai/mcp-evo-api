@@ -71,20 +71,20 @@ export class EvolutionApiService {
 
   // ===== INSTANCE MANAGEMENT =====
 
-  // Get instance status — normalizes API response to InstanceStatus
+  // Get instance status — API returns { instance: { instanceName, state } }
   async getInstanceStatus(): Promise<InstanceStatus> {
     try {
       const url = `/instance/connectionState/${this.instanceId}`;
       const response = await this.apiClient.get(url);
       const data = response.data;
-      // Evolution API may return connectionStatus or state — normalize both
+      const inst = data.instance || data;
       return {
-        state: data.state || data.connectionStatus || "Unknown",
-        connectionStatus: data.connectionStatus || data.state || "Unknown",
-        status: data.status || data.state || data.connectionStatus || "Unknown",
-        qrcode: data.qrcode,
-        message: data.message,
-        instanceName: data.instanceName || this.instanceId
+        state: inst.state || inst.connectionStatus || "Unknown",
+        connectionStatus: inst.connectionStatus || inst.state || "Unknown",
+        status: inst.status || inst.state || inst.connectionStatus || "Unknown",
+        qrcode: inst.qrcode,
+        message: inst.message,
+        instanceName: inst.instanceName || this.instanceId
       };
     } catch (error: any) {
       console.error(`[EvolutionAPI] Error checking instance "${this.instanceId}":`, error.message);
@@ -166,7 +166,7 @@ export class EvolutionApiService {
   // Logout instance from WhatsApp
   async logout(): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/instance/logout/${this.instanceId}`);
+      const response = await this.apiClient.delete(`/instance/logout/${this.instanceId}`);
       return response.data;
     } catch (error: any) {
       console.error("[EvolutionAPI] Error logging out instance:", error.message);
