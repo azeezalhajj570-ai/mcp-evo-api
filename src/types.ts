@@ -47,18 +47,17 @@ export interface SendTextMessageResponse {
   status: string;
 }
 
-// Verificação de números
+// WhatsApp number check
 export interface CheckNumberRequest {
   phone: string;
 }
 
-export interface CheckNumberResponse {
-  numbers: Array<{
-    jid: string;
-    exists: boolean;
-    phone: string;
-  }>;
-}
+export type CheckNumberResponse = Array<{
+  jid: string;
+  exists: boolean;
+  number: string;
+  name?: string;
+}>;
 
 // Contatos e chats
 export interface Contact {

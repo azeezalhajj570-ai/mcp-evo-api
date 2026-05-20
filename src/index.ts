@@ -220,7 +220,7 @@ server.tool("checkWhatsAppNumber", {
   try {
     const svc = getService();
     const result = await svc.checkWhatsAppNumber({ phone });
-    const isWhatsApp = result?.numbers?.[0]?.exists || false;
+    const isWhatsApp = result?.[0]?.exists || false;
     return { content: [{ type: "text", text: isWhatsApp ? `Number ${phone} is a valid WhatsApp.` : `Number ${phone} is NOT a valid WhatsApp.` }] };
   } catch (error) {
     return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
