@@ -35,7 +35,7 @@ import {
 // Service class for Evolution API
 // Global apikey (from .env) is always sent. Instance token is added per-session.
 export class EvolutionApiService {
-  private instanceId: string;
+  readonly instanceId: string;
   private instanceToken: string;
   private apiClient: import("axios").AxiosInstance;
 
@@ -71,20 +71,26 @@ export class EvolutionApiService {
 
   // ===== INSTANCE MANAGEMENT =====
 
-  // Verificar status da instância
+  // Get instance status — normalizes API response to InstanceStatus
   async getInstanceStatus(): Promise<InstanceStatus> {
     try {
       const url = `/instance/connectionState/${this.instanceId}`;
-      console.log(`[EvolutionAPI] GET ${config.evolutionApi.baseUrl}${url}`);
-      const response = await this.apiClient.get<InstanceStatus>(url);
-      return response.data;
+      const response = await this.apiClient.get(url);
+      const data = response.data;
+      // Evolution API may return connectionStatus or state — normalize both
+      return {
+        state: data.state || data.connectionStatus || "Unknown",
+        connectionStatus: data.connectionStatus || data.state || "Unknown",
+        status: data.status || data.state || data.connectionStatus || "Unknown",
+        qrcode: data.qrcode,
+        message: data.message,
+        instanceName: data.instanceName || this.instanceId
+      };
     } catch (error: any) {
       console.error(`[EvolutionAPI] Error checking instance "${this.instanceId}":`, error.message);
       if (error.response?.status === 404) {
         throw new Error(
-          `Instance "${this.instanceId}" not found. ` +
-          `Check EVOLUTION_API_INSTANCE env var or use "fetchInstances" tool to list available instances. ` +
-          `URL: ${config.evolutionApi.baseUrl}/instance/connectionState/${this.instanceId}`
+          `Instance "${this.instanceId}" not found. URL: ${config.evolutionApi.baseUrl}/instance/connectionState/${this.instanceId}`
         );
       }
       throw error;

@@ -10,12 +10,14 @@ export interface ApiInfo {
   documentation?: string;
 }
 
-// Status da instância
+// Instance status from Evolution API
 export interface InstanceStatus {
-  state: string;
-  status: string;
+  state?: string;
+  connectionStatus?: string;
+  status?: string;
   qrcode?: string;
   message?: string;
+  instanceName?: string;
 }
 
 // Mensagens de texto

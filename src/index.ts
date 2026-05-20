@@ -44,7 +44,12 @@ server.tool("getInstanceStatus", {}, async () => {
   try {
     const svc = getService();
     const status = await svc.getInstanceStatus();
-    return { content: [{ type: "text", text: `Instance status: ${status.state || "Unknown"}` }] };
+    return {
+      content: [{
+        type: "text",
+        text: `Instance "${status.instanceName || svc.instanceId}" status: ${status.state || status.connectionStatus || "Unknown"}`
+      }]
+    };
   } catch (error) {
     return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
   }
