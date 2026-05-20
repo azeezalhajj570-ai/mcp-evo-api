@@ -5,772 +5,538 @@ import { z } from "zod";
 import { config } from "./config.js";
 import { EvolutionApiService } from "./services/evolutionApiService.js";
 
-// Inicializa o serviço da Evolution API
-const evolutionService = new EvolutionApiService();
-
-// Cria o servidor MCP
+// Create the MCP server
 const server = new McpServer({
   name: config.mcp.name,
   version: config.mcp.version
 });
 
-// ===== FERRAMENTAS PARA INFORMAÇÕES GERAIS =====
+// Helper: build service from optional instance params (defaults from env)
+function getService(instanceName?: string, instanceToken?: string) {
+  return new EvolutionApiService(
+    instanceName || config.evolutionApi.instanceId,
+    instanceToken || config.evolutionApi.instanceToken
+  );
+}
 
-// Adiciona ferramenta para verificar o status da API
+// Shared base schema fields for instance auth
+const instanceNameField = z.string().optional().describe("Instance name on Evolution API (default: env var)");
+const instanceTokenField = z.string().optional().describe("Instance token for authentication (default: env var)");
+
+// ===== GENERAL INFO =====
+
 server.tool("getApiStatus",
-  {},
-  async () => {
+  {
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
+  },
+  async ({ instanceName, instanceToken }) => {
     try {
-      const apiInfo = await evolutionService.getApiInfo();
+      const svc = getService(instanceName, instanceToken);
+      const apiInfo = await svc.getApiInfo();
       return {
-        content: [{ 
-          type: "text", 
-          text: `Evolution API v${apiInfo.version} está rodando. Status: ${apiInfo.status}` 
-        }]
+        content: [{ type: "text", text: `Evolution API v${apiInfo.version} running. Status: ${apiInfo.status}` }]
       };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao conectar à Evolution API: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// ===== FERRAMENTAS PARA GESTÃO DE INSTÂNCIAS =====
+// ===== INSTANCE MANAGEMENT =====
 
-// Adiciona ferramenta para verificar status da instância
 server.tool("getInstanceStatus",
-  {},
-  async () => {
+  {
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
+  },
+  async ({ instanceName, instanceToken }) => {
     try {
-      const status = await evolutionService.getInstanceStatus();
+      const svc = getService(instanceName, instanceToken);
+      const status = await svc.getInstanceStatus();
       return {
-        content: [{ 
-          type: "text", 
-          text: `Instance status: ${status.state || "Unknown"}` 
-        }]
+        content: [{ type: "text", text: `Instance status: ${status.state || "Unknown"}` }]
       };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Error checking instance status: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para listar todas as instâncias disponíveis
 server.tool("fetchInstances",
-  {},
-  async () => {
+  {
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
+  },
+  async ({ instanceName, instanceToken }) => {
     try {
-      const instances = await evolutionService.fetchInstances();
+      const svc = getService(instanceName, instanceToken);
+      const instances = await svc.fetchInstances();
       if (!instances || instances.length === 0) {
-        return {
-          content: [{ 
-            type: "text", 
-            text: "No instances found on the Evolution API server."
-          }]
-        };
+        return { content: [{ type: "text", text: "No instances found." }] };
       }
-      const instanceList = instances.map((inst: any) => 
-        `- ${inst.instanceName || inst.name || "Unnamed"}: ${inst.state || "unknown state"}`
+      const list = instances.map((inst: any) =>
+        `- ${inst.name || inst.instanceName || "Unnamed"} (${inst.connectionStatus || "unknown"})`
       ).join("\n");
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Available instances (${instances.length}):\n${instanceList}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Available instances (${instances.length}):\n${list}` }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Error fetching instances: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para definir presença
-server.tool("setPresence",
-  { 
-    presence: z.enum(["available", "unavailable", "composing", "recording", "paused"])
-      .describe("Status de presença para definir")
-  },
-  async ({ presence }) => {
-    try {
-      await evolutionService.setPresence(presence);
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Presença definida como "${presence}" com sucesso.` 
-        }]
-      };
-    } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao definir presença: ${(error as Error).message}` 
-        }]
-      };
-    }
-  }
-);
-
-// Adiciona ferramenta para logout da instância
-server.tool("logoutInstance",
-  {},
-  async () => {
-    try {
-      await evolutionService.logout();
-      return {
-        content: [{ 
-          type: "text", 
-          text: "Instância desconectada com sucesso." 
-        }]
-      };
-    } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao desconectar instância: ${(error as Error).message}` 
-        }]
-      };
-    }
-  }
-);
-
-// Adiciona ferramenta para reiniciar a instância
 server.tool("restartInstance",
-  {},
-  async () => {
+  {
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
+  },
+  async ({ instanceName, instanceToken }) => {
     try {
-      await evolutionService.restartInstance();
-      return {
-        content: [{ 
-          type: "text", 
-          text: "Instância reiniciada com sucesso." 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.restartInstance();
+      return { content: [{ type: "text", text: "Instance restarted successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao reiniciar instância: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// ===== FERRAMENTAS PARA MENSAGENS =====
+server.tool("logoutInstance",
+  {
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
+  },
+  async ({ instanceName, instanceToken }) => {
+    try {
+      const svc = getService(instanceName, instanceToken);
+      await svc.logout();
+      return { content: [{ type: "text", text: "Instance logged out successfully." }] };
+    } catch (error) {
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
+    }
+  }
+);
 
-// Adiciona ferramenta para enviar mensagem de texto
+server.tool("setPresence",
+  {
+    presence: z.enum(["available", "unavailable", "composing", "recording", "paused"])
+      .describe("Presence status to set"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
+  },
+  async ({ presence, instanceName, instanceToken }) => {
+    try {
+      const svc = getService(instanceName, instanceToken);
+      await svc.setPresence(presence);
+      return { content: [{ type: "text", text: `Presence set to "${presence}" successfully.` }] };
+    } catch (error) {
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
+    }
+  }
+);
+
+// ===== MESSAGES =====
+
 server.tool("sendTextMessage",
-  { 
-    number: z.string().min(1).describe("Número do destinatário no formato internacional (ex: 5511999999999)"),
-    text: z.string().min(1).describe("Texto da mensagem a ser enviada"),
+  {
+    number: z.string().min(1).describe("Recipient number in international format (e.g. 5511999999999)"),
+    text: z.string().min(1).describe("Message text"),
     options: z.object({
-      delay: z.number().optional().describe("Atraso em milissegundos"),
-      presence: z.enum(["composing", "recording", "paused"]).optional().describe("Presença a mostrar"),
-      quotedMessageId: z.string().optional().describe("ID da mensagem a ser citada")
-    }).optional().describe("Opções adicionais para o envio")
+      delay: z.number().optional().describe("Delay in milliseconds"),
+      presence: z.enum(["composing", "recording", "paused"]).optional().describe("Presence to show"),
+      quotedMessageId: z.string().optional().describe("Message ID to quote")
+    }).optional().describe("Optional send options"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, text, options }) => {
+  async ({ number, text, options, instanceName, instanceToken }) => {
     try {
-      const result = await evolutionService.sendTextMessage({ number, text, options });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Mensagem enviada com sucesso: ${result?.key?.id || "ID não disponível"}` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      const result = await svc.sendTextMessage({ number, text, options });
+      return { content: [{ type: "text", text: `Message sent: ${result?.key?.id || "ID unavailable"}` }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao enviar mensagem: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para enviar mídia
 server.tool("sendMedia",
-  { 
-    number: z.string().min(1).describe("Número do destinatário no formato internacional"),
-    url: z.string().url().describe("URL da mídia a ser enviada"),
-    caption: z.string().optional().describe("Legenda para a mídia"),
-    fileName: z.string().optional().describe("Nome do arquivo"),
-    mediaType: z.enum(["image", "document", "video", "audio"]).describe("Tipo de mídia")
+  {
+    number: z.string().min(1).describe("Recipient number in international format"),
+    url: z.string().url().describe("Media URL"),
+    caption: z.string().optional().describe("Caption"),
+    fileName: z.string().optional().describe("File name"),
+    mediaType: z.enum(["image", "document", "video", "audio"]).describe("Media type"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, url, caption, fileName, mediaType }) => {
+  async ({ number, url, caption, fileName, mediaType, instanceName, instanceToken }) => {
     try {
-      const result = await evolutionService.sendMedia({
-        number,
-        media: {
-          url,
-          caption,
-          fileName,
-          mediaType
-        }
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Mídia enviada com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.sendMedia({ number, media: { url, caption, fileName, mediaType } });
+      return { content: [{ type: "text", text: "Media sent successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao enviar mídia: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para enviar mensagem de áudio
 server.tool("sendAudio",
-  { 
-    number: z.string().min(1).describe("Número do destinatário no formato internacional"),
-    url: z.string().url().describe("URL do áudio a ser enviado"),
-    ptt: z.boolean().optional().describe("Se é uma mensagem de voz (Push-to-talk)")
+  {
+    number: z.string().min(1).describe("Recipient number in international format"),
+    url: z.string().url().describe("Audio URL"),
+    ptt: z.boolean().optional().describe("Push-to-talk (voice message)"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, url, ptt }) => {
+  async ({ number, url, ptt, instanceName, instanceToken }) => {
     try {
-      await evolutionService.sendAudio({
-        number,
-        audio: {
-          url,
-          ptt
-        }
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Áudio enviado com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.sendAudio({ number, audio: { url, ptt } });
+      return { content: [{ type: "text", text: "Audio sent successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao enviar áudio: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para enviar sticker
 server.tool("sendSticker",
-  { 
-    number: z.string().min(1).describe("Número do destinatário no formato internacional"),
-    url: z.string().url().describe("URL do sticker a ser enviado")
+  {
+    number: z.string().min(1).describe("Recipient number in international format"),
+    url: z.string().url().describe("Sticker URL"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, url }) => {
+  async ({ number, url, instanceName, instanceToken }) => {
     try {
-      await evolutionService.sendSticker({
-        number,
-        sticker: { url }
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Sticker enviado com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.sendSticker({ number, sticker: { url } });
+      return { content: [{ type: "text", text: "Sticker sent successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao enviar sticker: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para enviar localização
 server.tool("sendLocation",
-  { 
-    number: z.string().min(1).describe("Número do destinatário no formato internacional"),
+  {
+    number: z.string().min(1).describe("Recipient number in international format"),
     lat: z.number().describe("Latitude"),
     lng: z.number().describe("Longitude"),
-    title: z.string().optional().describe("Título da localização"),
-    address: z.string().optional().describe("Endereço da localização")
+    title: z.string().optional().describe("Location title"),
+    address: z.string().optional().describe("Location address"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, lat, lng, title, address }) => {
+  async ({ number, lat, lng, title, address, instanceName, instanceToken }) => {
     try {
-      await evolutionService.sendLocation({
-        number,
-        location: { lat, lng, title, address }
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Localização enviada com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.sendLocation({ number, location: { lat, lng, title, address } });
+      return { content: [{ type: "text", text: "Location sent successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao enviar localização: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para enviar contato
 server.tool("sendContact",
-  { 
-    number: z.string().min(1).describe("Número do destinatário no formato internacional"),
-    fullName: z.string().min(1).describe("Nome completo do contato"),
-    wuid: z.string().min(1).describe("ID do WhatsApp do contato"),
-    phoneNumber: z.string().min(1).describe("Número de telefone do contato")
+  {
+    number: z.string().min(1).describe("Recipient number in international format"),
+    fullName: z.string().min(1).describe("Contact full name"),
+    wuid: z.string().min(1).describe("WhatsApp ID"),
+    phoneNumber: z.string().min(1).describe("Phone number"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, fullName, wuid, phoneNumber }) => {
+  async ({ number, fullName, wuid, phoneNumber, instanceName, instanceToken }) => {
     try {
-      await evolutionService.sendContact({
-        number,
-        contact: { fullName, wuid, phoneNumber }
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Contato enviado com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.sendContact({ number, contact: { fullName, wuid, phoneNumber } });
+      return { content: [{ type: "text", text: "Contact sent successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao enviar contato: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para enviar enquete
 server.tool("sendPoll",
-  { 
-    number: z.string().min(1).describe("Número do destinatário no formato internacional"),
-    name: z.string().min(1).describe("Pergunta da enquete"),
-    options: z.array(z.string()).min(2).describe("Opções de resposta"),
-    multipleChoice: z.boolean().optional().describe("Permite múltiplas escolhas")
+  {
+    number: z.string().min(1).describe("Recipient number in international format"),
+    name: z.string().min(1).describe("Poll question"),
+    options: z.array(z.string()).min(2).describe("Answer options"),
+    multipleChoice: z.boolean().optional().describe("Allow multiple choices"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, name, options, multipleChoice }) => {
+  async ({ number, name, options, multipleChoice, instanceName, instanceToken }) => {
     try {
-      await evolutionService.sendPoll({
-        number,
-        poll: { name, options, multipleChoice }
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Enquete enviada com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.sendPoll({ number, poll: { name, options, multipleChoice } });
+      return { content: [{ type: "text", text: "Poll sent successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao enviar enquete: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// ===== FERRAMENTAS PARA GESTÃO DE CHAT =====
+// ===== CHAT MANAGEMENT =====
 
-// Adiciona ferramenta para verificar número de WhatsApp
 server.tool("checkWhatsAppNumber",
-  { 
-    phone: z.string().min(1).describe("Número a ser verificado no formato internacional (ex: 5511999999999)")
+  {
+    phone: z.string().min(1).describe("Number to check in international format (e.g. 5511999999999)"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ phone }) => {
+  async ({ phone, instanceName, instanceToken }) => {
     try {
-      const result = await evolutionService.checkWhatsAppNumber({ phone });
+      const svc = getService(instanceName, instanceToken);
+      const result = await svc.checkWhatsAppNumber({ phone });
       const isWhatsApp = result?.numbers?.[0]?.exists || false;
-      return {
-        content: [{ 
-          type: "text", 
-          text: isWhatsApp 
-            ? `O número ${phone} é um número de WhatsApp válido.` 
-            : `O número ${phone} não é um número de WhatsApp válido.` 
-        }]
-      };
+      return { content: [{ type: "text", text: isWhatsApp ? `Number ${phone} is a valid WhatsApp.` : `Number ${phone} is NOT a valid WhatsApp.` }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao verificar número: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para marcar mensagem como lida
 server.tool("markMessageAsRead",
-  { 
-    messageId: z.string().min(1).describe("ID da mensagem a ser marcada como lida")
+  {
+    messageId: z.string().min(1).describe("Message ID to mark as read"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ messageId }) => {
+  async ({ messageId, instanceName, instanceToken }) => {
     try {
-      await evolutionService.markMessageAsRead(messageId);
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Mensagem marcada como lida com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.markMessageAsRead(messageId);
+      return { content: [{ type: "text", text: "Message marked as read successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao marcar mensagem como lida: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para arquivar chat
 server.tool("archiveChat",
-  { 
-    number: z.string().min(1).describe("Número no formato internacional"),
-    shouldArchive: z.boolean().default(true).describe("True para arquivar, false para desarquivar")
+  {
+    number: z.string().min(1).describe("Number in international format"),
+    shouldArchive: z.boolean().default(true).describe("True to archive, false to unarchive"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ number, shouldArchive }) => {
+  async ({ number, shouldArchive, instanceName, instanceToken }) => {
     try {
-      await evolutionService.archiveChat(number);
-      return {
-        content: [{ 
-          type: "text", 
-          text: shouldArchive 
-            ? `Chat arquivado com sucesso.` 
-            : `Chat desarquivado com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.archiveChat(number);
+      return { content: [{ type: "text", text: shouldArchive ? "Chat archived successfully." : "Chat unarchived successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao ${shouldArchive ? 'arquivar' : 'desarquivar'} chat: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para excluir mensagem para todos
 server.tool("deleteMessageForEveryone",
-  { 
-    messageId: z.string().min(1).describe("ID da mensagem a ser excluída")
+  {
+    messageId: z.string().min(1).describe("Message ID to delete"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ messageId }) => {
+  async ({ messageId, instanceName, instanceToken }) => {
     try {
-      await evolutionService.deleteMessageForEveryone(messageId);
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Mensagem excluída para todos com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.deleteMessageForEveryone(messageId);
+      return { content: [{ type: "text", text: "Message deleted for everyone successfully." }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao excluir mensagem: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// ===== FERRAMENTAS DE PERFIL =====
+// ===== PROFILE =====
 
-// Adiciona ferramenta para atualizar nome do perfil
 server.tool("updateProfileName",
-  { 
-    name: z.string().min(1).describe("Novo nome para o perfil")
+  {
+    name: z.string().min(1).describe("New profile name"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ name }) => {
+  async ({ name, instanceName, instanceToken }) => {
     try {
-      await evolutionService.updateProfileName(name);
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Nome do perfil atualizado para "${name}" com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.updateProfileName(name);
+      return { content: [{ type: "text", text: `Profile name updated to "${name}" successfully.` }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao atualizar nome do perfil: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para atualizar status do perfil
 server.tool("updateProfileStatus",
-  { 
-    status: z.string().min(1).describe("Novo status para o perfil")
+  {
+    status: z.string().min(1).describe("New profile status"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ status }) => {
+  async ({ status, instanceName, instanceToken }) => {
     try {
-      await evolutionService.updateProfileStatus(status);
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Status do perfil atualizado para "${status}" com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.updateProfileStatus(status);
+      return { content: [{ type: "text", text: `Profile status updated to "${status}" successfully.` }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao atualizar status do perfil: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// ===== FERRAMENTAS DE GRUPO =====
+// ===== GROUPS =====
 
-// Adiciona ferramenta para criar grupo
 server.tool("createGroup",
-  { 
-    subject: z.string().min(1).describe("Nome do grupo"),
-    participants: z.array(z.string()).min(1).describe("Lista de números de participantes"),
-    description: z.string().optional().describe("Descrição do grupo")
+  {
+    subject: z.string().min(1).describe("Group name"),
+    participants: z.array(z.string()).min(1).describe("Participant numbers list"),
+    description: z.string().optional().describe("Group description"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ subject, participants, description }) => {
+  async ({ subject, participants, description, instanceName, instanceToken }) => {
     try {
-      const result = await evolutionService.createGroup({
-        subject,
-        participants,
-        description
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Grupo "${subject}" criado com sucesso. ID: ${result.groupId}` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      const result = await svc.createGroup({ subject, participants, description });
+      return { content: [{ type: "text", text: `Group "${subject}" created. ID: ${result.groupId}` }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao criar grupo: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona ferramenta para adicionar participantes ao grupo
 server.tool("addGroupParticipants",
-  { 
-    groupId: z.string().min(1).describe("ID do grupo"),
-    participants: z.array(z.string()).min(1).describe("Lista de números de participantes")
+  {
+    groupId: z.string().min(1).describe("Group ID"),
+    participants: z.array(z.string()).min(1).describe("Participant numbers list"),
+    instanceName: instanceNameField,
+    instanceToken: instanceTokenField
   },
-  async ({ groupId, participants }) => {
+  async ({ groupId, participants, instanceName, instanceToken }) => {
     try {
-      await evolutionService.updateGroupMembers({
-        groupJid: groupId,
-        action: "add",
-        participants
-      });
-      return {
-        content: [{ 
-          type: "text", 
-          text: `${participants.length} participante(s) adicionado(s) ao grupo com sucesso.` 
-        }]
-      };
+      const svc = getService(instanceName, instanceToken);
+      await svc.updateGroupMembers({ groupJid: groupId, action: "add", participants });
+      return { content: [{ type: "text", text: `${participants.length} participant(s) added successfully.` }] };
     } catch (error) {
-      return {
-        content: [{ 
-          type: "text", 
-          text: `Erro ao adicionar participantes: ${(error as Error).message}` 
-        }]
-      };
+      return { content: [{ type: "text", text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// ===== RECURSOS PARA CONSULTAR INFORMAÇÕES =====
+// ===== RESOURCES =====
 
-// Adiciona recurso para visualizar contatos
-server.resource(
-  "contacts",
+server.resource("contacts",
   new ResourceTemplate("contacts://list", { list: undefined }),
   async (uri) => {
     try {
-      const contactsData = await evolutionService.fetchContacts();
+      const svc = getService();
+      const contactsData = await svc.fetchContacts();
       const contacts = contactsData?.data || [];
-      
       return {
         contents: [{
           uri: uri.href,
-          text: `Contatos disponíveis (${contacts.length}):\n${contacts
-            .map((contact: any) => `- ${contact.name || "Sem nome"}: ${contact.id.replace("@c.us", "")}`)
-            .join("\n")}`
+          text: `Contacts (${contacts.length}):\n${contacts.map((c: any) => `- ${c.name || "No name"}: ${c.id.replace("@c.us", "")}`).join("\n")}`
         }]
       };
     } catch (error) {
-      return {
-        contents: [{
-          uri: uri.href,
-          text: `Erro ao buscar contatos: ${(error as Error).message}`
-        }]
-      };
+      return { contents: [{ uri: uri.href, text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona recurso para visualizar conversas
-server.resource(
-  "chats",
+server.resource("chats",
   new ResourceTemplate("chats://list", { list: undefined }),
   async (uri) => {
     try {
-      const chatsData = await evolutionService.fetchChats();
+      const svc = getService();
+      const chatsData = await svc.fetchChats();
       const chats = chatsData?.data || [];
-      
       return {
         contents: [{
           uri: uri.href,
-          text: `Conversas disponíveis (${chats.length}):\n${chats
-            .map((chat: any) => `- ${chat.name || chat.id || "Chat sem nome"}`)
-            .join("\n")}`
+          text: `Chats (${chats.length}):\n${chats.map((c: any) => `- ${c.name || c.id || "Unnamed chat"}`).join("\n")}`
         }]
       };
     } catch (error) {
-      return {
-        contents: [{
-          uri: uri.href,
-          text: `Erro ao buscar conversas: ${(error as Error).message}`
-        }]
-      };
+      return { contents: [{ uri: uri.href, text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona recurso para visualizar grupos
-server.resource(
-  "groups",
+server.resource("groups",
   new ResourceTemplate("groups://list", { list: undefined }),
   async (uri) => {
     try {
-      const groupsData = await evolutionService.fetchAllGroups();
+      const svc = getService();
+      const groupsData = await svc.fetchAllGroups();
       const groups = groupsData?.data || [];
-      
       return {
         contents: [{
           uri: uri.href,
-          text: `Grupos disponíveis (${groups.length}):\n${groups
-            .map((group: any) => `- ${group.subject || group.id || "Grupo sem nome"} (${group.participants?.length || 0} membros)`)
-            .join("\n")}`
+          text: `Groups (${groups.length}):\n${groups.map((g: any) => `- ${g.subject || g.id || "Unnamed"} (${g.participants?.length || 0} members)`).join("\n")}`
         }]
       };
     } catch (error) {
-      return {
-        contents: [{
-          uri: uri.href,
-          text: `Erro ao buscar grupos: ${(error as Error).message}`
-        }]
-      };
+      return { contents: [{ uri: uri.href, text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona recurso para visualizar detalhes do perfil
-server.resource(
-  "profile",
+server.resource("profile",
   new ResourceTemplate("profile://info", { list: undefined }),
   async (uri) => {
     try {
-      const profile = await evolutionService.fetchProfile();
-      
+      const svc = getService();
+      const profile = await svc.fetchProfile();
       return {
         contents: [{
           uri: uri.href,
-          text: `Informações do perfil:\n- Nome: ${profile.name || "Não definido"}\n- Status: ${profile.status || "Não definido"}`
+          text: `Profile:\n- Name: ${profile.name || "Not set"}\n- Status: ${profile.status || "Not set"}`
         }]
       };
     } catch (error) {
-      return {
-        contents: [{
-          uri: uri.href,
-          text: `Erro ao buscar informações do perfil: ${(error as Error).message}`
-        }]
-      };
+      return { contents: [{ uri: uri.href, text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Adiciona recurso para visualizar configurações de privacidade
-server.resource(
-  "privacy",
+server.resource("privacy",
   new ResourceTemplate("privacy://settings", { list: undefined }),
   async (uri) => {
     try {
-      const privacy = await evolutionService.fetchPrivacySettings();
-      
+      const svc = getService();
+      const privacy = await svc.fetchPrivacySettings();
       return {
         contents: [{
           uri: uri.href,
-          text: `Configurações de privacidade:\n- Confirmações de leitura: ${privacy.readreceipts}\n- Perfil: ${privacy.profile}\n- Status: ${privacy.status}\n- Online: ${privacy.online}\n- Último visto: ${privacy.last}\n- Adição a grupos: ${privacy.groupadd}`
+          text: `Privacy settings:\n- Read receipts: ${privacy.readreceipts}\n- Profile: ${privacy.profile}\n- Status: ${privacy.status}\n- Online: ${privacy.online}\n- Last seen: ${privacy.last}\n- Group add: ${privacy.groupadd}`
         }]
       };
     } catch (error) {
-      return {
-        contents: [{
-          uri: uri.href,
-          text: `Erro ao buscar configurações de privacidade: ${(error as Error).message}`
-        }]
-      };
+      return { contents: [{ uri: uri.href, text: `Error: ${(error as Error).message}` }] };
     }
   }
 );
 
-// Inicia o servidor usando stdin/stdout para comunicação
+// ===== SERVER START =====
+
 export async function startServer() {
-  console.log("Iniciando servidor MCP para Evolution API...");
+  console.log("Starting MCP server for Evolution API...");
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.log("Servidor MCP iniciado com sucesso!");
+    console.log("MCP server started successfully!");
   } catch (error) {
-    console.error("Erro ao iniciar servidor MCP:", error);
+    console.error("Error starting MCP server:", error);
     process.exit(1);
   }
 }
 
-// Stub para compatibilidade com cli.ts
 export async function startWebSocketServer(port: number = 3000) {
-  console.warn(`Servidor WebSocket não está disponível nesta versão. Porta solicitada: ${port}`);
+  console.warn(`WebSocket server not available in this version. Requested port: ${port}`);
 }
 
-startServer(); 
+startServer();
