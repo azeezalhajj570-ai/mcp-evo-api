@@ -1,7 +1,10 @@
 // @ts-nocheck
+import "dotenv/config";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
+import http from "http";
 import { config } from "./config.js";
 import { EvolutionApiService } from "./services/evolutionApiService.js";
 
@@ -523,20 +526,69 @@ server.resource("privacy",
 
 // ===== SERVER START =====
 
-export async function startServer() {
-  console.log("Starting MCP server for Evolution API...");
+async function startStdioServer() {
+  console.log("Starting MCP server for Evolution API via STDIO...");
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.log("MCP server started successfully!");
+    console.log("MCP STDIO server started successfully!");
   } catch (error) {
-    console.error("Error starting MCP server:", error);
+    console.error("Error starting MCP STDIO server:", error);
     process.exit(1);
   }
 }
 
-export async function startWebSocketServer(port: number = 3000) {
-  console.warn(`WebSocket server not available in this version. Requested port: ${port}`);
+async function startHttpServer(port: number = 3000) {
+  console.log(`Starting MCP server for Evolution API via SSE on port ${port}...`);
+
+  const sessions: Record<string, SSEServerTransport> = {};
+
+  const httpServer = http.createServer(async (req, res) => {
+    if (req.method === "GET" && req.url === "/sse") {
+      // Client opens SSE connection
+      const transport = new SSEServerTransport("/message", res);
+      sessions[transport.sessionId] = transport;
+      res.on("close", () => delete sessions[transport.sessionId]);
+      await server.connect(transport);
+      console.log(`SSE client connected. Session: ${transport.sessionId}`);
+    } else if (req.method === "POST" && req.url?.startsWith("/message")) {
+      // Client sends message via POST
+      const sessionId = new URL(req.url, `http://localhost:${port}`).searchParams.get("sessionId");
+      if (!sessionId || !sessions[sessionId]) {
+        res.writeHead(404);
+        res.end("Session not found");
+        return;
+      }
+      await sessions[sessionId].handlePostMessage(req, res);
+    } else {
+      res.writeHead(404);
+      res.end("Not Found");
+    }
+  });
+
+  httpServer.listen(port, () => {
+    console.log(`MCP SSE server listening on http://localhost:${port}`);
+    console.log(`  - Connect via GET /sse for SSE stream`);
+    console.log(`  - Send messages via POST /message?sessionId=<id>`);
+  });
 }
 
-startServer();
+// Backward-compatible exports for cli.ts
+export async function startServer() {
+  await startStdioServer();
+}
+
+export async function startWebSocketServer(port: number = 3000) {
+  console.warn("WebSocket transport is deprecated. Use HTTP/SSE via MCP_TRANSPORT=http instead.");
+  await startHttpServer(port);
+}
+
+// Auto-detect transport mode
+const transportMode = process.env.MCP_TRANSPORT || "stdio";
+const port = Number(process.env.PORT) || 3000;
+
+if (transportMode === "http" || transportMode === "sse") {
+  startHttpServer(port);
+} else {
+  startStdioServer();
+}
