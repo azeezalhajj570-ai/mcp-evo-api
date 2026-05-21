@@ -3,64 +3,26 @@ import test from "node:test";
 import nock from "nock";
 import { EvolutionApiService } from "../dist/services/evolutionApiService.js";
 
-const BASE = "https://seu-servidor-evolution-api.com";
+const BASE = "https://your-evolution-api-server.com";
 
-test("extractMessageTimestamp handles messageTimestamp", () => {
-  const svc = new EvolutionApiService("test", "tok");
-  const msg = { key: { remoteJid: "a@c.us", fromMe: false, id: "1" }, messageTimestamp: 1700000000 };
-  assert.equal(svc.extractMessageTimestamp(msg), 1700000000);
-});
-
-test("extractMessageTimestamp handles timestamp field", () => {
-  const svc = new EvolutionApiService("test", "tok");
-  const msg = { key: { remoteJid: "a@c.us", fromMe: false, id: "1" }, timestamp: 1700000001 };
-  assert.equal(svc.extractMessageTimestamp(msg), 1700000001);
-});
-
-test("extractMessageTimestamp falls back to createdAt", () => {
-  const svc = new EvolutionApiService("test", "tok");
-  const msg = { key: { remoteJid: "a@c.us", fromMe: false, id: "1" }, createdAt: "2025-01-15T10:00:00Z" };
-  const ts = svc.extractMessageTimestamp(msg);
-  assert.ok(typeof ts === "number");
-  assert.ok(ts > 0);
-});
-
-test("instance-token header and body field are sent", async (t) => {
+test("instance-token header is sent", async (t) => {
   const svc = new EvolutionApiService("test-instance", "test-token");
   const scope = nock(BASE, { reqheaders: { "instance-token": "test-token" } })
-    .post("/message/text/test-instance", (body) => body.instanceToken === "test-token")
+    .post("/message/sendText/test-instance")
     .reply(200, { key: { id: "msg123" } });
 
   await svc.sendTextMessage({ number: "5511999999999", text: "Hello" });
   assert.ok(scope.isDone());
 });
 
-test("findMessages passes filters correctly", async () => {
+test("findMessages passes query and chatId", async () => {
   const svc = new EvolutionApiService("test-instance", "test-token");
   const scope = nock(BASE)
     .post("/chat/findMessages/test-instance", (body) =>
-      body.chatId === "5511999999999@c.us" &&
-      body.limit === 50 &&
-      body.offset === 10 &&
-      body.fromMe === false &&
-      body.startDate === "2025-01-01T00:00:00Z" &&
-      body.endDate === "2025-12-31T23:59:59Z")
+      body.query === "hello" && body.chatId === "5511999999999@c.us")
     .reply(200, { data: [] });
 
-  await svc.findMessages({
-    remoteJid: "5511999999999@c.us", limit: 50, offset: 10,
-    fromMe: false, startDate: "2025-01-01T00:00:00Z", endDate: "2025-12-31T23:59:59Z"
-  });
-  assert.ok(scope.isDone());
-});
-
-test("findMessages uses default limit and offset", async () => {
-  const svc = new EvolutionApiService("test-instance", "test-token");
-  const scope = nock(BASE)
-    .post("/chat/findMessages/test-instance", (body) => body.limit === 100 && body.offset === 0)
-    .reply(200, { data: [] });
-
-  await svc.findMessages({});
+  await svc.findMessages("hello", "5511999999999@c.us");
   assert.ok(scope.isDone());
 });
 
@@ -75,7 +37,7 @@ test("findStatusMessages sends correct request", async () => {
 test("no instance-token header when token is empty", async () => {
   const svc = new EvolutionApiService("no-token-instance");
   const scope = nock(BASE, { badheaders: ["instance-token"] })
-    .post("/message/text/no-token-instance")
+    .post("/message/sendText/no-token-instance")
     .reply(200, { key: { id: "1" } });
 
   await svc.sendTextMessage({ number: "5511999999999", text: "Hi" });
@@ -91,8 +53,23 @@ test("getApiInfo sends GET /", async () => {
   assert.ok(scope.isDone());
 });
 
-test("group detection by @g.us suffix", () => {
-  assert.ok("12345@g.us".endsWith("@g.us"));
-  assert.ok(!"5511999999999@c.us".endsWith("@g.us"));
-  assert.ok(!"5511999999999@s.whatsapp.net".endsWith("@g.us"));
+test("sendMedia posts to sendMedia endpoint", async () => {
+  const svc = new EvolutionApiService("test-instance", "test-token");
+  const scope = nock(BASE)
+    .post("/message/sendMedia/test-instance", (body) =>
+      body.number === "5511999999999" && body.media.mediaType === "image")
+    .reply(200, { key: { id: "media1" } });
+
+  await svc.sendMedia({ number: "5511999999999", media: { url: "https://example.com/img.jpg", mediaType: "image" } });
+  assert.ok(scope.isDone());
+});
+
+test("sendAudio posts to sendAudio endpoint", async () => {
+  const svc = new EvolutionApiService("test-instance", "test-token");
+  const scope = nock(BASE)
+    .post("/message/sendAudio/test-instance")
+    .reply(200, { key: { id: "audio1" } });
+
+  await svc.sendAudio({ number: "5511999999999", audio: { url: "https://example.com/audio.mp3" } });
+  assert.ok(scope.isDone());
 });
