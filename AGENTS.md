@@ -5,7 +5,7 @@ shell commands, and other important information, read the current plan
 
 ## Commands
 
-- **Build + Restart (Docker)**: `npm run build && sudo docker compose up -d --build`
+- **Build + Restart (Docker)**: `sudo docker compose up -d --build`
 - **Build only**: `npm run build`
 - **View logs**: `sudo docker compose logs -f`
 - **Tests**: `npm test`

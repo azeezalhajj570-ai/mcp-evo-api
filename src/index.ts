@@ -11,6 +11,8 @@ import { registerGroupTools } from "./tools/groups.js";
 import { registerProfileTools } from "./tools/profile.js";
 import { registerIntegrationTools } from "./tools/integrations.js";
 import { registerWebhookTools } from "./tools/webhooks.js";
+import { registerContactTools } from "./tools/contacts.js";
+import { registerLabelTools } from "./tools/labels.js";
 import { registerResources } from "./resources/index.js";
 import { startStdioServer } from "./transports/stdio.js";
 import { startHttpServer, authStorage } from "./transports/sse.js";
@@ -50,6 +52,8 @@ registerGroupTools(server, getService);
 registerProfileTools(server, getService);
 registerIntegrationTools(server, getService);
 registerWebhookTools(server, getService);
+registerContactTools(server, getService);
+registerLabelTools(server, getService);
 
 // ===== RESOURCES =====
 registerResources(server, getService);

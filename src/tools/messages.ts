@@ -14,6 +14,7 @@ import {
 import { success, error } from "../utils/response.js";
 import { ErrorCodes } from "../types/response.js";
 import { createHandler } from "../middleware/index.js";
+import { sanitizeMessage } from "../utils/sanitize.js";
 
 export function registerMessageTools(server: McpServer, getService: () => EvolutionApiService): void {
 
@@ -146,6 +147,7 @@ export function registerMessageTools(server: McpServer, getService: () => Evolut
     const { query, chatId } = ctx.input as any;
     const svc = getService();
     const result = await svc.findMessages(query, chatId);
-    return success(ctx.tool, result);
+    const msgs = result?.messages?.records ?? result?.records ?? result ?? [];
+    return success(ctx.tool, (Array.isArray(msgs) ? msgs : []).map(sanitizeMessage));
   }));
 }

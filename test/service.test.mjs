@@ -73,3 +73,48 @@ test("sendAudio posts to sendAudio endpoint", async () => {
   await svc.sendAudio({ number: "5511999999999", audio: { url: "https://example.com/audio.mp3" } });
   assert.ok(scope.isDone());
 });
+
+test("fetchChats calls POST /chat/findChats", async () => {
+  const svc = new EvolutionApiService("test-instance", "test-token");
+  const scope = nock(BASE)
+    .post("/chat/findChats/test-instance")
+    .reply(200, { data: [{ id: "5511999999999@c.us", name: "Test Chat", lastMessage: { text: "hi", timestamp: 1000 } }] });
+
+  const result = await svc.fetchChats();
+  assert.equal(result.data[0].name, "Test Chat");
+  assert.ok(scope.isDone());
+});
+
+test("findLabels calls GET /label/findLabels", async () => {
+  const svc = new EvolutionApiService("test-instance", "test-token");
+  const scope = nock(BASE)
+    .get("/label/findLabels/test-instance")
+    .reply(200, [{ id: "label1", name: "Clients", color: 1 }]);
+
+  const result = await svc.findLabels();
+  assert.ok(Array.isArray(result));
+  assert.equal(result[0].name, "Clients");
+  assert.ok(scope.isDone());
+});
+
+test("handleLabel calls POST /label/handleLabel", async () => {
+  const svc = new EvolutionApiService("test-instance", "test-token");
+  const scope = nock(BASE)
+    .post("/label/handleLabel/test-instance", { number: "5511999999999", labelId: "label1", action: "add" })
+    .reply(200, { success: true });
+
+  const result = await svc.handleLabel("5511999999999", "label1", "add");
+  assert.equal(result.success, true);
+  assert.ok(scope.isDone());
+});
+
+test("fetchContacts calls POST /chat/findContacts", async () => {
+  const svc = new EvolutionApiService("test-instance", "test-token");
+  const scope = nock(BASE)
+    .post("/chat/findContacts/test-instance", { where: {} })
+    .reply(200, { data: [{ id: "5511999999999@c.us", name: "John", pushname: "John Doe" }] });
+
+  const result = await svc.fetchContacts();
+  assert.equal(result.data[0].name, "John");
+  assert.ok(scope.isDone());
+});

@@ -430,9 +430,9 @@ export class EvolutionApiService {
   }
 
   // Buscar contatos
-  async fetchContacts(): Promise<{ data: Contact[] }> {
+  async fetchContacts(where?: { id?: string }): Promise<{ data: Contact[] }> {
     try {
-      const response = await this.apiClient.post<{ data: Contact[] }>(`/chat/contacts/${this.instanceId}`);
+      const response = await this.apiClient.post<{ data: Contact[] }>(`/chat/findContacts/${this.instanceId}`, { where: where ?? {} });
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar contatos:", error);
@@ -497,10 +497,34 @@ export class EvolutionApiService {
   // Buscar conversas
   async fetchChats(): Promise<{ data: Chat[] }> {
     try {
-      const response = await this.apiClient.get<{ data: Chat[] }>(`/chat/findChats/${this.instanceId}`);
+      const response = await this.apiClient.post<{ data: Chat[] }>(`/chat/findChats/${this.instanceId}`);
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar conversas:", error);
+      throw error;
+    }
+  }
+
+  // ===== LABELS =====
+
+  async findLabels(): Promise<any> {
+    try {
+      const response = await this.apiClient.get(`/label/findLabels/${this.instanceId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao buscar labels:", error);
+      throw error;
+    }
+  }
+
+  async handleLabel(number: string, labelId: string, action: "add" | "remove"): Promise<any> {
+    try {
+      const response = await this.apiClient.post(`/label/handleLabel/${this.instanceId}`, {
+        number, labelId, action
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao gerenciar label:", error);
       throw error;
     }
   }
