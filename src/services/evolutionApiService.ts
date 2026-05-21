@@ -272,9 +272,15 @@ export class EvolutionApiService {
     }
   }
 
-  // Send audio (PTT/voice message) — not supported in this API version
+  // Send audio (PTT/voice message)
   async sendAudio(data: SendAudioRequest): Promise<any> {
-    throw new Error("Audio messages are not supported by this Evolution API version");
+    try {
+      const response = await this.apiClient.post(`/message/sendAudio/${this.instanceId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao enviar áudio:", error);
+      throw error;
+    }
   }
 
   // Enviar sticker
@@ -371,16 +377,16 @@ export class EvolutionApiService {
     }
   }
 
-  // Arquivar chat
-  async archiveChat(number: string): Promise<any> {
+  // Arquivar/desarquivar chat
+  async archiveChat(number: string, shouldArchive: boolean = true): Promise<any> {
     try {
       const response = await this.apiClient.put(`/chat/archiveChat/${this.instanceId}`, {
         phone: number,
-        action: "archive" // ou "unarchive"
+        action: shouldArchive ? "archive" : "unarchive"
       });
       return response.data;
     } catch (error) {
-      console.error("Erro ao arquivar chat:", error);
+      console.error("Erro ao arquivar/desarquivar chat:", error);
       throw error;
     }
   }
