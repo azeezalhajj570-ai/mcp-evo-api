@@ -34,4 +34,4 @@ jobs:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
           model: opencode-go/deepseek-v4-flash
-          prompt: ${{ github.event_name == 'issues' && format('Issue #{0}: {1} - {2}', github.event.issue.number, github.event.issue.title, github.event.issue.body) || '' }}
+          prompt: "${{ github.event_name == 'issues' && format('Issue #{0}: {1} - {2}', github.event.issue.number, github.event.issue.title, github.event.issue.body) || '' }}"
