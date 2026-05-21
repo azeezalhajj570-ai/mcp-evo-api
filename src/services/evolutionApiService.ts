@@ -454,6 +454,21 @@ export class EvolutionApiService {
     }
   }
 
+  // Buscar histórico de mensagens de um chat
+  async fetchMessages(chatId: string, limit?: number, offset?: number): Promise<any> {
+    try {
+      const response = await this.apiClient.post(`/chat/fetchMessages/${this.instanceId}`, {
+        chatId,
+        limit: limit ?? 50,
+        offset: offset ?? 0
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao buscar histórico de mensagens:", error);
+      throw error;
+    }
+  }
+
   // Buscar mensagens de status
   async findStatusMessages(): Promise<any> {
     try {

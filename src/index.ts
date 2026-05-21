@@ -14,8 +14,8 @@ import { registerWebhookTools } from "./tools/webhooks.js";
 import { registerResources } from "./resources/index.js";
 import { startStdioServer } from "./transports/stdio.js";
 import { startHttpServer, authStorage } from "./transports/sse.js";
-import { success, error, mcpText } from "./utils/response.js";
-import { ErrorCodes } from "./types/response.js";
+import { success } from "./utils/response.js";
+import { createHandler } from "./middleware/index.js";
 
 interface SessionAuth {
   instanceName: string;
@@ -36,16 +36,11 @@ const server = new McpServer({
 });
 
 // ===== GENERAL =====
-server.tool("getApiStatus", {}, async () => {
-  const start = Date.now();
-  try {
-    const svc = getService();
-    const info = await svc.getApiInfo();
-    return mcpText(success("getApiStatus", info, Date.now() - start));
-  } catch (e) {
-    return mcpText(error("getApiStatus", ErrorCodes.EXTERNAL_API_ERROR, (e as Error).message, true));
-  }
-});
+server.tool("getApiStatus", {}, createHandler("getApiStatus", async (ctx) => {
+  const svc = getService();
+  const info = await svc.getApiInfo();
+  return success(ctx.tool, info);
+}));
 
 // ===== DOMAIN-SCOPED TOOLS =====
 registerInstanceTools(server, getService);

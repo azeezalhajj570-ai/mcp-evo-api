@@ -116,6 +116,7 @@ Unarchive chat
 Mark read
 Search chats
 Fetch business profile
+Chat history — paginated, filterable
 ```
 
 Tool definitions:
@@ -126,6 +127,7 @@ chats.unarchive
 chats.mark_read
 chats.search
 chats.business_profile
+chats.history
 ```
 
 ---
