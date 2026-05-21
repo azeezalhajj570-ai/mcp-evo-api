@@ -1,20 +1,25 @@
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json tsconfig.json ./
+RUN npm ci
+
+COPY src ./src
+RUN npm run build
+
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copiar arquivos de dependências
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Copiar arquivos de código compilado
-COPY dist ./dist
+COPY --from=builder /app/dist ./dist
 COPY .env.example ./.env.example
 
-# Definir variáveis de ambiente padrão
 ENV NODE_ENV=production
 
-# Expor a porta para WebSocket (opcional, usada se WebSocket estiver habilitado)
 EXPOSE 3000
 
-# Comando para iniciar o servidor
-CMD ["node", "dist/index.js"] 
+CMD ["node", "dist/index.js"]
