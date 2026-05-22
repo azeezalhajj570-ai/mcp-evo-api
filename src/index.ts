@@ -27,7 +27,7 @@ interface SessionAuth {
 function getService(): EvolutionApiService {
   const auth = authStorage.getStore() as SessionAuth | undefined;
   return new EvolutionApiService(
-    auth?.instanceName || config.evolutionApi.instanceId,
+    auth?.instanceName || config.evolutionApi.instanceName,
     auth?.instanceToken || config.evolutionApi.instanceToken
   );
 }

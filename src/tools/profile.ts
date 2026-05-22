@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { EvolutionApiService } from "../services/evolutionApiService.js";
 import { UpdateProfileNameSchema, UpdateProfileStatusSchema, UpdateProfilePictureSchema, UpdatePrivacySchema } from "../schemas/profile.js";
@@ -39,9 +40,12 @@ export function registerProfileTools(server: McpServer, getService: () => Evolut
     return success(ctx.tool, result);
   }));
 
-  server.tool("profile.info", {}, createHandler("profile.info", async (ctx) => {
+  server.tool("profile.info", {
+    number: z.string().min(1).describe("Phone number to fetch profile for (e.g. 967774544394)")
+  }, createHandler("profile.info", async (ctx) => {
+    const { number } = ctx.input as { number: string };
     const svc = getService();
-    const profile = await svc.fetchProfile();
+    const profile = await svc.fetchProfile(number);
     return success(ctx.tool, profile);
   }));
 }

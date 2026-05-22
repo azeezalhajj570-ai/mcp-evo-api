@@ -40,7 +40,7 @@ export class EvolutionApiService {
   private apiClient: import("axios").AxiosInstance;
 
   constructor(
-    instanceId: string = config.evolutionApi.instanceId,
+    instanceId: string = config.evolutionApi.instanceName,
     instanceToken: string = config.evolutionApi.instanceToken
   ) {
     this.instanceId = instanceId;
@@ -54,6 +54,28 @@ export class EvolutionApiService {
         ...(instanceToken ? { "instance-token": instanceToken } : {})
       }
     });
+
+    this.apiClient.interceptors.response.use(
+      (res) => res,
+      (error) => {
+        if (error.response) {
+          const status = error.response.status;
+          const body = error.response.data;
+          const msg = body?.response?.message?.[0] || body?.error || body?.message || error.message;
+          if (status === 404) {
+            throw new Error(`NOT_FOUND: ${msg}`);
+          }
+          if (status === 401 || status === 403) {
+            throw new Error(`AUTH_FAILED: ${msg}`);
+          }
+          if (status === 429) {
+            throw new Error(`RATE_LIMITED: ${msg}`);
+          }
+          throw new Error(`API_ERROR (${status}): ${msg}`);
+        }
+        throw error;
+      }
+    );
   }
 
   // ===== FUNÇÕES GERAIS DA API =====
@@ -455,12 +477,10 @@ export class EvolutionApiService {
   }
 
   // Buscar histórico de mensagens de um chat
-  async fetchMessages(chatId: string, limit?: number, offset?: number): Promise<any> {
+  async fetchMessages(remoteJid: string): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/chat/fetchMessages/${this.instanceId}`, {
-        chatId,
-        limit: limit ?? 50,
-        offset: offset ?? 0
+      const response = await this.apiClient.post(`/chat/findMessages/${this.instanceId}`, {
+        where: { key: { remoteJid } }
       });
       return response.data;
     } catch (error) {
@@ -532,9 +552,10 @@ export class EvolutionApiService {
   // ===== CONFIGURAÇÕES DE PERFIL =====
 
   // Buscar perfil de negócios
-  async fetchBusinessProfile(): Promise<any> {
+  async fetchBusinessProfile(number?: string): Promise<any> {
     try {
-      const response = await this.apiClient.post(`/profile/fetchBusinessProfile/${this.instanceId}`);
+      const payload = number ? { number } : {};
+      const response = await this.apiClient.post(`/chat/fetchBusinessProfile/${this.instanceId}`, payload);
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar perfil de negócios:", error);
@@ -542,10 +563,11 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar perfil
-  async fetchProfile(): Promise<ProfileInfo> {
+  // Buscar perfil de um número (ou do próprio instance se omitido)
+  async fetchProfile(number?: string): Promise<any> {
     try {
-      const response = await this.apiClient.post<ProfileInfo>(`/profile/fetchProfile/${this.instanceId}`);
+      const payload = number ? { number } : {};
+      const response = await this.apiClient.post(`/chat/fetchProfile/${this.instanceId}`, payload);
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar perfil:", error);

@@ -8,12 +8,6 @@ import { createHandler } from "../middleware/index.js";
 
 export function registerInstanceTools(server: McpServer, getService: () => EvolutionApiService): void {
 
-  server.tool("instances.list", {}, createHandler("instances.list", async (ctx) => {
-    const svc = getService();
-    const instances = await svc.fetchInstances();
-    return success(ctx.tool, Array.isArray(instances) ? instances : []);
-  }));
-
   server.tool("instances.status", {}, createHandler("instances.status", async (ctx) => {
     const svc = getService();
     const status = await svc.getInstanceStatus();

@@ -19,7 +19,7 @@ export async function startHttpServer(server: McpServer, port: number = 3000): P
   const httpServer = http.createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/sse") {
-        const instanceName = (req.headers["x-instance-name"] as string) || config.evolutionApi.instanceId;
+        const instanceName = (req.headers["x-instance-name"] as string) || config.evolutionApi.instanceName;
         const instanceToken = (req.headers["x-instance-token"] as string) || config.evolutionApi.instanceToken;
 
         const transport = new SSEServerTransport("/message", res);

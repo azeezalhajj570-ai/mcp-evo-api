@@ -27,7 +27,20 @@ export function createHandler(toolName: string, fn: (ctx: RequestContext) => Pro
       const result = await pipeline(ctx, () => fn(ctx));
       return mcpText(result);
     } catch (e) {
-      return mcpText(error(toolName, ErrorCodes.INTERNAL_ERROR, (e as Error).message));
+      const msg = (e as Error).message;
+      if (msg.startsWith("NOT_FOUND:")) {
+        return mcpText(error(toolName, ErrorCodes.INSTANCE_NOT_FOUND, msg.replace("NOT_FOUND:", "").trim()));
+      }
+      if (msg.startsWith("AUTH_FAILED:")) {
+        return mcpText(error(toolName, ErrorCodes.AUTH_REQUIRED, msg.replace("AUTH_FAILED:", "").trim()));
+      }
+      if (msg.startsWith("RATE_LIMITED:")) {
+        return mcpText(error(toolName, ErrorCodes.RATE_LIMIT_EXCEEDED, msg.replace("RATE_LIMITED:", "").trim(), true));
+      }
+      if (msg.startsWith("API_ERROR")) {
+        return mcpText(error(toolName, ErrorCodes.EXTERNAL_API_ERROR, msg));
+      }
+      return mcpText(error(toolName, ErrorCodes.INTERNAL_ERROR, msg));
     }
   };
 }

@@ -88,10 +88,11 @@ export function registerChatTools(server: McpServer, getService: () => Evolution
   }));
 
   server.tool("chats.history", ChatHistorySchema.shape, createHandler("chats.history", async (ctx) => {
-    const { chatId, limit, offset } = ctx.input as any;
+    const { remoteJid, limit, offset } = ctx.input as any;
     const svc = getService();
-    const result = await svc.fetchMessages(chatId, limit, offset);
+    const result = await svc.fetchMessages(remoteJid);
     const msgs = result?.messages?.records ?? result?.records ?? result ?? [];
-    return success(ctx.tool, (Array.isArray(msgs) ? msgs : []).map(sanitizeMessage));
+    const sliced = Array.isArray(msgs) ? msgs.slice(offset ?? 0, (offset ?? 0) + (limit ?? 50)) : [];
+    return success(ctx.tool, sliced.map(sanitizeMessage));
   }));
 }
